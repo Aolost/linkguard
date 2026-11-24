@@ -5,7 +5,7 @@ MAKEFLAGS += --no-print-directory
 
 COVERAGE_MIN ?= 80
 CRITICAL_COVERAGE_MIN ?= 90
-CRITICAL_MODULES := */linkguard/parse.py,*/linkguard/host.py
+CRITICAL_MODULES := */linkguard/parse.py,*/linkguard/host.py,*/linkguard/ssrf.py
 RUN := uv run --locked
 
 check:

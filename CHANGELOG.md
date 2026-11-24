@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rules LG-006 (punycode label), LG-007 (Latin mixed with Cyrillic or Greek in one label), LG-011 (long hostname); `Policy.max_hostname_length`.
 - `linkguard.data` (versioned reference lists, `DATA_VERSION` pinned to a content digest by a test) and rules LG-008 (typosquat), LG-009 (brand in subdomain), LG-010 (subdomain depth, `Policy.max_subdomain_depth`), LG-012 (suspicious TLD), LG-013 (URL shortener); `split_host` is relative to the listed suffixes, not the Public Suffix List.
 - `linkguard.inspect(url, policy)` returning a frozen `Report` with `to_dict()` (JSON schema version 1, pinned by a independently written golden file), verdicts `NO_RED_FLAGS`/`SUSPICIOUS`/`DANGEROUS`, and normalized URLs that are always printable ASCII. Refused input yields a refused report, never an exception.
-- `make coverage-gate`: parser and host modules must keep at least 90 percent line and branch coverage; run as part of `make check`.
+- `linkguard.ssrf.blocked_reason`: explicit CIDR blocklist (IPv4 and IPv6, with mapped, NAT64 and 6to4 judged by their embedded IPv4) that fails closed.
+- `make coverage-gate`: parser, host and SSRF modules must keep at least 90 percent line and branch coverage; run as part of `make check`.
 
 ### Fixed
 

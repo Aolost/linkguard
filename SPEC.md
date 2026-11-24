@@ -290,13 +290,25 @@ Pipeline for each hop (the initial URL and every redirect target):
    treated as hostile text, subject to the 2048-character limit, and goes back to step 1.
    At most 5 redirects; the 6th is refused with `redirect_limit`.
 
-Blocked address classes, implemented as an explicit CIDR table (not `ipaddress.is_global`, whose
-behavior varies by Python patch release): loopback, private (RFC 1918), link-local, CGNAT
-(`100.64.0.0/10`), multicast, reserved and special-purpose per the IANA registries, unspecified,
-IPv6 loopback, ULA (`fc00::/7`), IPv6 link-local (`fe80::/10`), deprecated site-local
-(`fec0::/10`), and IPv4-mapped, NAT64 (`64:ff9b::/96`), and 6to4 (`2002::/16`) addresses, which
-are evaluated by their embedded IPv4. The table fails closed: an address not clearly global is
-blocked.
+Blocked address classes, implemented as an explicit CIDR table in `linkguard.ssrf` (not
+`ipaddress.is_global`, whose behavior varies by Python patch release):
+
+- IPv4: `0.0.0.0/8` (unspecified), `10/8`, `172.16/12`, `192.168/16` (private), `100.64/10`
+  (CGNAT), `127/8` (loopback), `169.254/16` (link-local), `192.0.0.0/24` and `192.88.99.0/24`
+  and `240/4` including the broadcast address (reserved), `192.0.2/24`, `198.51.100/24`,
+  `203.0.113/24` (documentation), `198.18/15` (benchmarking), `224/4` (multicast).
+- IPv6: only global unicast `2000::/3` can be allowed. Everything outside it is blocked
+  (unspecified `::`, loopback `::1`, ULA `fc00::/7`, link-local `fe80::/10`, deprecated
+  site-local `fec0::/10`, multicast `ff00::/8`, and all other space as `non_global`). Inside
+  `2000::/3` these are also blocked: `2001::/23` (IETF protocol assignments, including Teredo),
+  `2001:db8::/32` and `3fff::/20` (documentation).
+- IPv4-mapped (`::ffff:0:0/96`), NAT64 (`64:ff9b::/96`), and 6to4 (`2002::/16`) addresses are
+  evaluated by the IPv4 address they embed, so `::ffff:127.0.0.1` is blocked as loopback and
+  `::ffff:8.8.8.8` is allowed. Other NAT64 prefixes such as `64:ff9b:1::/48` are blocked.
+
+The table fails closed: an address not clearly global is blocked. A test asserts that every address
+Python 3.12 reports as non-global is also blocked here. That is a floor, not a proof of
+completeness, and it depends on the interpreter's own tables.
 
 #### DNS
 
