@@ -87,11 +87,17 @@ linkguard batch FILE
   prints `Error: <escaped message>` to stderr, and exits 3. Shell completion is disabled because it
   edits the user's shell startup files, and pretty exceptions are disabled because they print local
   variables, including the URL under test.
-- `batch` inspects one URL per line and prints one text line per URL (escaped input, verdict or
-  refusal code, rule IDs). Line endings and surrounding spaces are stripped, blank lines are
-  skipped, there is no comment syntax. Limits: file at most 1 MiB, at most 10,000 URLs, each line
-  at most 2048 characters (a longer line is reported as refused for that entry). Batch never
-  fetches. It has no `--json`.
+- `batch` inspects one URL per line and prints one text line per URL: the file line number, the
+  verdict (or `REFUSED`), the escaped input, and the rule IDs (or the refusal code), followed by a
+  summary line such as `4 URLs: 1 NO_RED_FLAGS, 1 SUSPICIOUS, 1 DANGEROUS, 1 REFUSED`. Only `\n`
+  separates entries; a trailing `\r` and surrounding spaces and tabs are stripped, and blank lines
+  are skipped (but still counted in line numbers). There is no comment syntax, so `# note` is a
+  refused entry. Other separators (form feed, U+2028) stay inside the line, where the URL parser
+  refuses them. A line longer than 2048 characters is refused as its own entry.
+- `batch` refuses the whole file, with exit code 3, a message on stderr, and nothing on stdout, if
+  it is unreadable (missing, a directory), larger than 1 MiB, not valid UTF-8, holds no URLs, or
+  holds more than 10,000 URLs. At most 1 MiB + 1 byte is ever read. Otherwise the exit code is the
+  maximum over all entries. Batch never fetches and has no `--json`, `--follow`, or `--online`.
 - Text output goes to stdout, warnings and errors to stderr. All echoed attacker-controlled
   text is escaped to printable ASCII and truncated (evidence at most 200 characters).
 - No flag, environment variable, or config file disables SSRF checks.

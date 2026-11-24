@@ -6,12 +6,14 @@ Exit codes: 0 no red flags, 1 suspicious, 2 dangerous, 3 refused or error.
 import json
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Annotated
 
 import typer
 from typer.exceptions import TyperException
 
 from linkguard.api import inspect
+from linkguard.batch import BatchError, load_entries, result_line, summary_line
 from linkguard.model import DEFAULT_POLICY, Policy, Report, Verdict, escape_text
 from linkguard.render import render_text
 
@@ -67,6 +69,23 @@ def check(
         else render_text(report).rstrip("\n")
     )
     raise typer.Exit(exit_code(report))
+
+
+@app.command()
+def batch(
+    file: Annotated[Path, typer.Argument(help="A file with one URL per line.")],
+) -> None:
+    """Inspect every URL in a file. The exit code is the highest of all entries."""
+    try:
+        entries = load_entries(file)
+    except BatchError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        raise typer.Exit(EXIT_REFUSED_OR_ERROR) from error
+    reports = [(number, inspect(url)) for number, url in entries]
+    lines = [result_line(number, report) for number, report in reports]
+    all_reports = [report for _, report in reports]
+    typer.echo("\n".join([*lines, summary_line(all_reports)]))
+    raise typer.Exit(max(exit_code(report) for report in all_reports))
 
 
 def main(argv: Sequence[str] | None = None) -> int:
