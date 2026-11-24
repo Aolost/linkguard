@@ -1,11 +1,16 @@
 """Public entry point: turn a URL string into a `Report`."""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 from linkguard._version import version
 from linkguard.data import DATA_VERSION
+from linkguard.fetch import SafeFetcher
 from linkguard.heuristics import find_findings
 from linkguard.host import normalize_host
 from linkguard.model import (
     DEFAULT_POLICY,
+    FetchSummary,
     Policy,
     Refusal,
     Report,
@@ -14,6 +19,16 @@ from linkguard.model import (
 )
 from linkguard.parse import ParseError, parse_url
 from linkguard.urlnorm import normalized_url
+
+
+def _fetch(url: str) -> FetchSummary:
+    """Run the fetch on its own event loop in a helper thread.
+
+    A fresh loop in a fresh thread works whether or not the caller is already inside an
+    event loop. `SafeFetcher.fetch` reports problems in its result, not by raising.
+    """
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, SafeFetcher().fetch(url)).result()
 
 
 def inspect(url: str, policy: Policy = DEFAULT_POLICY) -> Report:
@@ -34,13 +49,15 @@ def inspect(url: str, policy: Policy = DEFAULT_POLICY) -> Report:
             findings=(),
         )
     findings = tuple(find_findings(parsed, host, policy))
+    normalized = normalized_url(parsed, host)
     return Report(
         tool_version=version(),
         data_version=DATA_VERSION,
         input=shown,
         outcome="inspected",
         refusal=None,
-        normalized_url=normalized_url(parsed, host),
+        normalized_url=normalized,
         verdict=verdict_for(findings),
         findings=findings,
+        fetch=_fetch(normalized) if policy.follow else FetchSummary(),
     )

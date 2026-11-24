@@ -79,7 +79,14 @@ linkguard check URL [--follow] [--json]
 linkguard batch FILE
 ```
 
-- `check` inspects one URL. `--follow` enables `SafeFetcher`.
+- `check` inspects one URL. `--follow` enables `SafeFetcher`. Text output lists the input, the
+  normalized URL, the verdict, each finding (`[severity] rule-id  evidence` and its explanation), and,
+  with `--follow`, the fetch result and each hop. A clean result prints "No red flags found. This does
+  not mean the URL is trustworthy". `--json` prints the report dictionary and nothing else.
+- Typer's own usage errors exit 2, which would collide with `DANGEROUS`, so `main()` catches them,
+  prints `Error: <escaped message>` to stderr, and exits 3. Shell completion is disabled because it
+  edits the user's shell startup files, and pretty exceptions are disabled because they print local
+  variables, including the URL under test.
 - `batch` inspects one URL per line and prints one text line per URL (escaped input, verdict or
   refusal code, rule IDs). Line endings and surrounding spaces are stripped, blank lines are
   skipped, there is no comment syntax. Limits: file at most 1 MiB, at most 10,000 URLs, each line
@@ -491,7 +498,7 @@ Runtime dependencies are added only in the slice that first imports them. Pinned
 | ---- | -------- | ---------------- | ----------------------------------------------------------------------- |
 | `idna` | IDNA 2008 / UTS #46 host conversion | The standard `idna` codec implements the obsolete IDNA 2003; correct 2008 tables and mapping are large data sets that must not be hand-written. Already a transitive dependency of `httpx`. | Locked 3.20 (uploaded 2026-09-17 per `uv.lock`), license BSD-3-Clause from package metadata. Checked: version, license, upload date. Not checked: advisories (no scanner was run). |
 | `httpx` | Async HTTP client for `SafeFetcher` | TLS with a custom SNI name distinct from the connect address, streaming reads, per-operation timeouts and a transport seam for fakes. In-house this is a TLS and HTTP/1.1 client, which is risky security code. | Locked 0.28.1, BSD-3-Clause. Pulls `httpcore` 1.0.9 (BSD-3-Clause), `h11` 0.16.0 (MIT), `anyio` 4.16.0 (MIT), `certifi` 2026.11.20 (MPL-2.0) and `idna`. Behavior of `sni_hostname` (SNI and certificate name) and `trust_env` checked by tests against this version. Not checked: advisories (no scanner was run). linkguard passes its own `ssl.SSLContext` using the system trust store, so `certifi`'s bundle is not used for verification. |
-| `typer` | CLI | Argument parsing, help, exit-code plumbing. This one is a convenience: `argparse` could do it in the standard library. Recorded here because the brief names `typer`; the cost is `click` as a transitive dependency. | Same |
+| `typer` | CLI | Argument parsing, help, exit-code plumbing. This one is a convenience: `argparse` could do it in the standard library with no dependencies. Kept because the brief names `typer`. **Actual cost, corrected from an earlier wrong note that said only `click`:** typer 0.29.2 vendors its own click code and pulls 10 more packages: `rich` 15.0.0, `shellingham` 1.5.4, `pydantic` 2.14.4 and the compiled `pydantic-core` 2.50.5, `annotated-types`, `annotated-doc`, `typing-inspection`, `markdown-it-py`, `mdurl` (and `pygments`, already present). Swapping to `argparse` would be a small change if this footprint is unwanted. | typer MIT, rich MIT, shellingham ISC, per package metadata. Not checked: advisories (no scanner was run). |
 
 Development tools: `pytest` (test runner), `pytest-cov` (coverage gate), `hypothesis` 6.170.17
 (property tests on arbitrary text; the standard library has no generator), `ruff` (lint and

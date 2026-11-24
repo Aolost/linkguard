@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlsplit
 
 from linkguard.hop import HopClient, HopFailed, HopResponse
 from linkguard.host import Domain, normalize_host
-from linkguard.model import FetchSummary, Hop
+from linkguard.model import FetchSummary, Hop, escape_text
 from linkguard.parse import MAX_URL_LENGTH, ParseError, parse_url
 from linkguard.resolve import HopRefused, Resolver, SubprocessResolver, resolve_hop
 from linkguard.ssrf import IPAddress
@@ -82,7 +82,7 @@ class SafeFetcher:
                     tuple(hops),
                     final_url=hop_url,
                     http_status=response.status,
-                    content_type=response.content_type,
+                    content_type=_escaped(response.content_type),
                     bytes_read=response.bytes_read,
                     truncated=response.truncated,
                 )
@@ -125,6 +125,11 @@ class SafeFetcher:
                 continue
             return response, normalized_url(parsed, host), address
         raise _Stop("connect_failed", refused=False)
+
+
+def _escaped(value: str | None) -> str | None:
+    # Response headers are attacker-controlled and end up in terminal and JSON output.
+    return None if value is None else escape_text(value)
 
 
 def _redirect_target(response: HopResponse, current_url: str) -> str | None:

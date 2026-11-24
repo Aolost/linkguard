@@ -28,8 +28,9 @@ class Finding:
 
 @dataclass(frozen=True, slots=True)
 class Policy:
-    """Heuristic thresholds. Nothing here can affect SSRF validation."""
+    """Options and heuristic thresholds. Nothing here can affect SSRF validation."""
 
+    follow: bool = False
     max_hostname_length: int = 50
     max_subdomain_depth: int = 4
 
