@@ -6,6 +6,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
+    "httpx>=0.28.1",
     "idna>=3.20",
 ]
 
@@ -20,6 +21,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.6",
+    "trustme>=1.2.1",
 ]
 
 [tool.ruff]
@@ -34,6 +36,7 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --strict-config"
+markers = ["loopback: may connect to 127.0.0.0/8 and ::1 only (local test servers)"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -340,7 +340,7 @@ argument; the fetcher clamps them with `min()`, so a value can lower a limit and
 | Connect timeout | 5 s | httpx connect timeout, per connection attempt | Per attempt. A trickled TLS handshake is bounded by the total deadline, not by this value. |
 | Total time (DNS, every hop, TLS, headers, body) | 10 s | one `asyncio.timeout` around the whole fetch | Enforced at every await point by cancellation. Not a real-time guarantee: overshoot is scheduler latency, and a suspended or CPU-starved process can exceed it. No blocking call runs inside the event loop. |
 | Body bytes read | 65,536 | counted on the raw stream; `Accept-Encoding: identity` | Hard. Reading stops at the cap and `truncated` is true. |
-| Response header size | httpx/h11 default | the HTTP library's own limit | A test against the locked version asserts that an oversized header block is rejected. If it is not, this row is amended to say so. |
+| Response header size | httpx/h11 default | the HTTP library's own limit | Tested against the locked h11 0.16.0: a 300,000-byte header value is rejected with `http_error`. The exact threshold is the library default and was not measured. |
 | Redirects | 5 | counter | Hard. |
 | Ports | 80, 443 | validation | Hard. |
 | URL length | 2048 characters | parser | Hard. |
@@ -368,9 +368,8 @@ to loopback, and only tests marked `loopback` may use that.
   answers without any network lookup. Hung, noisy, oversized, and failing children are tested
   with an injected child command. Name resolution against real DNS is not tested.
 - Not verified by any test: connecting to hosts on the public Internet, behavior against real
-  DNS servers, behavior behind real CDNs and proxies, and platforms other than Linux and macOS.
-  The README says so. If the throwaway-CA dependency is declined, the TLS rows above move to this
-  list.
+  DNS servers, behavior behind real CDNs and proxies, and platforms other than Linux. The README
+  says so.
 
 ### Reputation provider
 
@@ -481,19 +480,19 @@ Runtime dependencies are added only in the slice that first imports them. Pinned
 | Name | Used for | Why not in-house | Vetting (performed in the adding slice, recorded in the commit message) |
 | ---- | -------- | ---------------- | ----------------------------------------------------------------------- |
 | `idna` | IDNA 2008 / UTS #46 host conversion | The standard `idna` codec implements the obsolete IDNA 2003; correct 2008 tables and mapping are large data sets that must not be hand-written. Already a transitive dependency of `httpx`. | Locked 3.20 (uploaded 2026-09-17 per `uv.lock`), license BSD-3-Clause from package metadata. Checked: version, license, upload date. Not checked: advisories (no scanner was run). |
-| `httpx` | Async HTTP client for `SafeFetcher` | TLS with a custom SNI name distinct from the connect address, streaming reads, per-operation timeouts and a transport seam for fakes. In-house this is a TLS and HTTP/1.1 client, which is risky security code. | Same, plus review of `sni_hostname` and `trust_env` behavior in the locked version |
+| `httpx` | Async HTTP client for `SafeFetcher` | TLS with a custom SNI name distinct from the connect address, streaming reads, per-operation timeouts and a transport seam for fakes. In-house this is a TLS and HTTP/1.1 client, which is risky security code. | Locked 0.28.1, BSD-3-Clause. Pulls `httpcore` 1.0.9 (BSD-3-Clause), `h11` 0.16.0 (MIT), `anyio` 4.16.0 (MIT), `certifi` 2026.11.20 (MPL-2.0) and `idna`. Behavior of `sni_hostname` (SNI and certificate name) and `trust_env` checked by tests against this version. Not checked: advisories (no scanner was run). linkguard passes its own `ssl.SSLContext` using the system trust store, so `certifi`'s bundle is not used for verification. |
 | `typer` | CLI | Argument parsing, help, exit-code plumbing. This one is a convenience: `argparse` could do it in the standard library. Recorded here because the brief names `typer`; the cost is `click` as a transitive dependency. | Same |
 
 Development tools: `pytest` (test runner), `pytest-cov` (coverage gate), `hypothesis` 6.170.17
 (property tests on arbitrary text; the standard library has no generator), `ruff` (lint and
 format), `mypy` (strict typing). All are already in `pyproject.toml`.
 
-Proposed development dependency, not yet added and not in the brief: `trustme`, to create a
-throwaway certificate authority and server certificate in memory for the loopback TLS fixture.
-The standard library can verify certificates but cannot create them, and committing a private key
-as a fixture is rejected (rule 11, and the secret scanner). Dev only, never imported by shipped
-code. It is added in the `HopClient` slice only after the maintainer approves; if declined, the
-TLS tests are dropped and the TLS and SNI behavior is documented as unverified.
+Added development dependency, approved by the maintainer in chat: `trustme` 1.2.1 (MIT OR Apache-2.0),
+which creates a throwaway certificate authority and server certificates in memory for the loopback TLS
+tests. It brings `cryptography` 50.0.2, `cffi` 2.1.1, and `pycparser` 3.12, all dev-only and never
+imported by shipped code. The standard library can verify certificates but cannot create them, and
+committing a private key as a fixture is rejected (rule 11, and the secret scanner). Advisories were
+not checked.
 
 No cryptography is written. TLS and certificate verification are the standard library `ssl`
 module through `httpx`, with the system trust store and default hostname checking; hostname
