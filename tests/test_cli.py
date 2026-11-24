@@ -1,8 +1,10 @@
+import errno
 import json
 import re
 import runpy
 import subprocess
 import sys
+from pathlib import Path
 
 import httpx
 import pytest
@@ -291,3 +293,51 @@ def test_python_dash_m_entry_point_runs_in_process(
     with pytest.raises(SystemExit) as caught:
         runpy.run_module("linkguard", run_name="__main__")
     assert caught.value.code == 3
+
+
+def test_an_unexpected_error_exits_three_and_reveals_only_its_type(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def boom(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("secret detail http://leak.test/")
+
+    monkeypatch.setattr("linkguard.cli.inspect", boom)
+    code, out, err = run(capsys, "check", "http://example.test/")
+    assert (code, out) == (3, "")
+    assert err == "Error: internal error (RuntimeError)\n"
+
+
+def test_a_broken_pipe_exits_three_quietly(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    class ClosedPipe:
+        def write(self, _text: str) -> int:
+            raise BrokenPipeError(errno.EPIPE, "Broken pipe")
+
+        def flush(self) -> None:
+            raise BrokenPipeError(errno.EPIPE, "Broken pipe")
+
+    monkeypatch.setattr(sys, "stdout", ClosedPipe())
+    code = main(["check", "http://example.test/"])
+    assert (code, capsys.readouterr().err) == (3, "")
+
+
+def test_a_reader_that_closes_stdout_early_gets_exit_three_and_no_traceback(
+    tmp_path: Path,
+) -> None:
+    urls = tmp_path / "urls.txt"
+    urls.write_text("http://example.test/\n" * 6000, encoding="utf-8")
+    proc = subprocess.Popen(  # noqa: S603 - fixed argv built from sys.executable
+        [sys.executable, "-m", "linkguard", "batch", str(urls)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdout is not None and proc.stderr is not None
+    proc.stdout.readline()
+    proc.stdout.close()
+    returncode = proc.wait(timeout=120)
+    err = proc.stderr.read()
+    proc.stderr.close()
+    assert returncode == 3
+    assert "Traceback" not in err and "Exception ignored" not in err

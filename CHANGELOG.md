@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Exit status: an internal error or a closed output pipe now exits 3. Before, both exited 1, which callers read as SUSPICIOUS.
+- A URL that grows past 2048 characters when percent-encoded is refused as `too_long`. Before, `--follow` refused it as `invalid_url` and re-inspecting its normalized form failed.
+- The userinfo hostname check no longer takes quadratic time (83 ms for a 2000 character userinfo); a fixed-size pattern replaces it with identical results on 200,000 random strings.
+- `batch` ignores a leading UTF-8 byte order mark instead of refusing the first URL.
+- A trailing ideographic full stop on a host is handled like an ASCII trailing dot.
+- Tests no longer carry a `type: ignore` or `noqa`, and the hung-child test no longer depends on one-second start-up.
 - Test sources no longer contain literal invisible or look-alike characters (no-break space, U+2028, the right-to-left override, full-width digits); they are built from code points in `tests/chars.py`.
 
 - `HopClient` reports `httpx.InvalidURL` (raised by the HTTP library while it parses a hostile `Location`) as `http_error` instead of letting it escape.

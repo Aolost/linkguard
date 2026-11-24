@@ -35,7 +35,7 @@ def load_entries(path: Path) -> list[tuple[int, str]]:
     if len(data) > MAX_FILE_BYTES:
         raise BatchError("file is larger than 1 MiB")
     try:
-        text = data.decode("utf-8")
+        text = data.decode("utf-8-sig")  # Windows editors add a byte order mark
     except UnicodeDecodeError as error:
         raise BatchError("file is not valid UTF-8") from error
     stripped = (

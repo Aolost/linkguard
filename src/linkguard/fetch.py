@@ -95,6 +95,7 @@ class SafeFetcher:
         try:
             parsed = parse_url(url)
             host = normalize_host(parsed.host)
+            normalized = normalized_url(parsed, host)
         except ParseError as error:
             code = "invalid_redirect" if is_redirect else "invalid_url"
             raise _Stop(code, refused=True) from error
@@ -123,7 +124,7 @@ class SafeFetcher:
                 if failure.reason != "connect_failed":
                     raise _Stop(failure.reason, refused=False) from failure
                 continue
-            return response, normalized_url(parsed, host), address
+            return response, normalized, address
         raise _Stop("connect_failed", refused=False)
 
 

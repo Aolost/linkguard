@@ -174,7 +174,7 @@ def test_hung_child_times_out_and_is_killed_and_reaped(tmp_path: Path) -> None:
         "time.sleep(60)"
     )
     with pytest.raises(HopRefused) as caught:
-        lookup(child(code, str(pid_file)), timeout=1.0)
+        lookup(child(code, str(pid_file)), timeout=3.0)
     assert caught.value.reason == "dns_timeout"
     pid = int(pid_file.read_text())
     with pytest.raises(ProcessLookupError):

@@ -81,3 +81,8 @@ def test_total_length_boundary() -> None:
 
 def test_lone_surrogate_is_refused_not_raised() -> None:
     assert refusal_code("\ud800.test") == "invalid_host"
+
+
+def test_an_ideographic_trailing_dot_is_treated_like_an_ascii_one() -> None:
+    assert normalize_domain("example.test" + chr(0x3002)).name == "example.test"
+    assert refusal_code("example.test" + chr(0x3002) + chr(0x3002)) == "invalid_host"

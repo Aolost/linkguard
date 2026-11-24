@@ -280,6 +280,11 @@ Each behavior claimed in this README, and the test that checks it:
 | A server-controlled `Content-Type` is escaped | `tests/test_cli.py::test_server_controlled_content_type_is_escaped` |
 | Exit codes 0, 1, 2 and 3 | `tests/test_cli.py::test_exit_codes_follow_the_verdict` |
 | Usage errors exit 3, not 2 | `tests/test_cli.py::test_usage_errors_exit_three_with_a_message_on_stderr` |
+| An internal error exits 3 and prints only its type | `tests/test_cli.py::test_an_unexpected_error_exits_three_and_reveals_only_its_type` |
+| A reader that closes the pipe gets exit 3, not 1 | `tests/test_cli.py::test_a_reader_that_closes_stdout_early_gets_exit_three_and_no_traceback` |
+| A URL that grows past 2048 characters when normalized is refused | `tests/test_api.py::test_a_url_whose_normalized_form_exceeds_the_limit_is_refused` |
+| Redirects between `http` and `https` are followed in both directions | `tests/test_fetch.py::test_redirects_between_https_and_http_are_followed_in_both_directions` |
+| Hostile userinfo cannot make hostname detection slow | `tests/test_heuristics.py::test_hostname_like_detection_is_linear_on_hostile_userinfo` |
 | Blocked address classes and their boundaries | `tests/test_ssrf.py::test_blocked_addresses_and_their_reasons` |
 | Public addresses next to blocked ranges are allowed | `tests/test_ssrf.py::test_public_addresses_are_allowed` |
 | One blocked address among public ones refuses the hop with no connection | `tests/test_fetch.py::test_one_blocked_answer_among_public_ones_means_no_connection_at_all` |

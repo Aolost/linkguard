@@ -89,8 +89,8 @@ linkguard batch FILE
   variables, including the URL under test.
 - `batch` inspects one URL per line and prints one text line per URL: the file line number, the
   verdict (or `REFUSED`), the escaped input, and the rule IDs (or the refusal code), followed by a
-  summary line such as `4 URLs: 1 NO_RED_FLAGS, 1 SUSPICIOUS, 1 DANGEROUS, 1 REFUSED`. Only `\n`
-  separates entries; a trailing `\r` and surrounding spaces and tabs are stripped, and blank lines
+  summary line such as `4 URLs: 1 NO_RED_FLAGS, 1 SUSPICIOUS, 1 DANGEROUS, 1 REFUSED`. A leading UTF-8 byte
+  order mark is ignored. Only `\n` separates entries; a trailing `\r` and surrounding spaces and tabs are stripped, and blank lines
   are skipped (but still counted in line numbers). There is no comment syntax, so `# note` is a
   refused entry. Other separators (form feed, U+2028) stay inside the line, where the URL parser
   refuses them. A line longer than 2048 characters is refused as its own entry.
@@ -110,7 +110,7 @@ linkguard batch FILE
 | 0 | `NO_RED_FLAGS` |
 | 1 | `SUSPICIOUS` |
 | 2 | `DANGEROUS` |
-| 3 | Refused or error: input refused by the parser, fetch refused or failed, bad CLI usage, unreadable file |
+| 3 | Refused or error: input refused by the parser, fetch refused or failed, bad CLI usage, unreadable file, an internal error, or a closed output pipe |
 
 When a requested step fails (fetch refused or errored) the report is still printed with whatever
 was computed, and the exit code is 3. For `batch` the exit code is the maximum code over all
@@ -197,14 +197,17 @@ Input to `inspect` is a `str`. Output `normalized_url` is `scheme://[host][:port
 
 - Scheme lowercased; only `http` and `https` accepted. The `://` form is required.
 - Input longer than 2048 characters is refused (2048 accepted, 2049 refused).
+  Percent-encoding non-ASCII path characters can lengthen a URL, so the normalized URL is held to
+  the same limit: if it exceeds 2048 characters the input is refused as `too_long`. This keeps
+  `normalized_url` bounded and normalization idempotent, and every URL the fetcher sees is in range.
 - Any control character (C0, DEL, C1), any whitespace (including Unicode whitespace), NUL, lone
   surrogate, and backslash anywhere in the input is refused. Parsers disagree on backslash, so
   it fails closed.
 - Fragment is split off and dropped from `normalized_url`; it is never sent anywhere.
 - Userinfo is parsed for heuristics, dropped from `normalized_url`, and never sent by the fetcher.
 - Host: percent-decoded once (so `%2e` becomes `.`); a `%` remaining after decoding is refused.
-  Lowercased, exactly one trailing dot removed, converted to ASCII with IDNA 2008 via `idna`
-  (UTS #46 mapping), each label 1 to 63 octets, whole name at most 253. Empty labels refused.
+  Lowercased, converted to ASCII with IDNA 2008 via `idna` (UTS #46 mapping, which turns
+  every dot variant such as U+3002 into `.`), and exactly one trailing dot removed after that, each label 1 to 63 octets, whole name at most 253. Empty labels refused.
 - IPv4 in any legacy form (decimal `2130706433`, hexadecimal `0x7f000001`, octal `0177.0.0.1`,
   mixed `0x7f.1`, short `127.1`) is parsed with WHATWG IPv4 rules and normalized to dotted
   decimal. A host whose last label is numeric or `0x`-prefixed that fails to parse as IPv4 is

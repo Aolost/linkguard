@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+from typing import Any
 
 import pytest
 
@@ -15,7 +16,7 @@ def _only_loopback_sockets(
     loopback_allowed = request.node.get_closest_marker("loopback") is not None
     real_connect = socket.socket.connect
 
-    def guarded_connect(self: socket.socket, address: object) -> None:
+    def guarded_connect(self: socket.socket, address: Any) -> None:
         if self.family in (socket.AF_INET, socket.AF_INET6):
             host = address[0] if isinstance(address, tuple) else ""
             try:
@@ -26,6 +27,6 @@ def _only_loopback_sockets(
                 raise AssertionError(
                     f"test tried a real network connection: {address!r}"
                 )
-        real_connect(self, address)  # type: ignore[arg-type]
+        real_connect(self, address)
 
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)

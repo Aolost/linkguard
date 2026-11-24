@@ -109,3 +109,32 @@ def test_normalized_url_is_idempotent(url: str) -> None:
     first = inspect(url).normalized_url
     if first is not None:
         assert inspect(first).normalized_url == first
+
+
+CJK = text(0x4F60)  # one character that percent-encodes to nine
+
+
+def cjk_url(normalized_length: int) -> str:
+    prefix = "http://example.test/"
+    pad = (normalized_length - len(prefix)) % 9
+    return prefix + CJK * ((normalized_length - len(prefix)) // 9) + "a" * pad
+
+
+def test_a_url_whose_normalized_form_exceeds_the_limit_is_refused() -> None:
+    accepted = inspect(cjk_url(2048))
+    assert accepted.outcome == "inspected"
+    assert accepted.normalized_url is not None and len(accepted.normalized_url) == 2048
+    assert inspect(accepted.normalized_url).normalized_url == accepted.normalized_url
+
+    refused = inspect(cjk_url(2048) + "a")
+    assert refused.outcome == "refused"
+    assert refused.refusal is not None and refused.refusal.code == "too_long"
+    assert "normalized" in refused.refusal.message
+
+
+@given(st.text(alphabet=text(0x4F60, 0xFC) + "a/%", max_size=400))
+def test_a_normalized_url_is_always_within_the_limit_and_stable(path: str) -> None:
+    first = inspect("http://example.test/" + path).normalized_url
+    if first is not None:
+        assert len(first) <= 2048
+        assert inspect(first).normalized_url == first

@@ -30,14 +30,14 @@ def _percent_decode_once(raw: str) -> str:
 def normalize_domain(raw: str) -> Domain:
     """Return the ASCII form of `raw` or raise `ParseError`."""
     decoded = _percent_decode_once(raw)
-    without_dot = decoded[:-1] if decoded.endswith(".") else decoded
     try:
-        name = idna.encode(without_dot, uts46=True, std3_rules=True).decode("ascii")
+        # IDNA maps every dot variant (such as U+3002) to "." and tolerates exactly one
+        # trailing dot, so the trailing dot is removed after encoding, not before.
+        name = idna.encode(decoded, uts46=True, std3_rules=True).decode("ascii")
     except UnicodeError as error:
         raise ParseError("invalid_host", "host is not a valid IDNA name") from error
-    if name.startswith(".") or name.endswith(".") or ".." in name:
-        raise ParseError("invalid_host", "host has an empty label")
-    return Domain(name=name, percent_encoded=decoded != raw)
+    # idna already refuses every empty label; only the one allowed trailing dot remains.
+    return Domain(name=name.removesuffix("."), percent_encoded=decoded != raw)
 
 
 @dataclass(frozen=True, slots=True)

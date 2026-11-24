@@ -3,9 +3,12 @@
 Exit codes: 0 no red flags, 1 suspicious, 2 dangerous, 3 refused or error.
 """
 
+import contextlib
 import json
+import os
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -30,6 +33,20 @@ app = typer.Typer(
         "were found, not that the URL is trustworthy."
     ),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Result:
+    """What a command wants printed and the exit code it asks for.
+
+    Commands return this instead of printing, so that `main` owns every write. Click
+    turns a write error inside a command into `sys.exit(1)`, which callers would read
+    as SUSPICIOUS.
+    """
+
+    stdout: str
+    code: int
+    stderr: str = ""
 
 
 def exit_code(report: Report) -> int:
@@ -59,44 +76,70 @@ def check(
     json_output: Annotated[
         bool, typer.Option("--json", help="Print the report as JSON.")
     ] = False,
-) -> None:
+) -> Result:
     """Inspect one URL."""
     policy = Policy(follow=True) if follow else DEFAULT_POLICY
     report = inspect(url, policy)
-    typer.echo(
-        json.dumps(report.to_dict(), indent=2)
-        if json_output
-        else render_text(report).rstrip("\n")
+    text = (
+        json.dumps(report.to_dict(), indent=2) if json_output else render_text(report)
     )
-    raise typer.Exit(exit_code(report))
+    return Result(text.rstrip("\n") + "\n", exit_code(report))
 
 
 @app.command()
 def batch(
     file: Annotated[Path, typer.Argument(help="A file with one URL per line.")],
-) -> None:
+) -> Result:
     """Inspect every URL in a file. The exit code is the highest of all entries."""
     try:
         entries = load_entries(file)
     except BatchError as error:
-        print(f"Error: {error}", file=sys.stderr)
-        raise typer.Exit(EXIT_REFUSED_OR_ERROR) from error
+        return Result("", EXIT_REFUSED_OR_ERROR, f"Error: {error}\n")
     reports = [(number, inspect(url)) for number, url in entries]
     lines = [result_line(number, report) for number, report in reports]
     all_reports = [report for _, report in reports]
-    typer.echo("\n".join([*lines, summary_line(all_reports)]))
-    raise typer.Exit(max(exit_code(report) for report in all_reports))
+    text = "\n".join([*lines, summary_line(all_reports)]) + "\n"
+    return Result(text, max(exit_code(report) for report in all_reports))
+
+
+def _discard_stdout() -> None:
+    """Point stdout at /dev/null after a broken pipe.
+
+    Otherwise the flush at interpreter exit fails again and changes the exit status.
+    """
+    with contextlib.suppress(OSError, ValueError, AttributeError):  # not a real file
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        try:
+            os.dup2(devnull, sys.stdout.fileno())
+        finally:
+            os.close(devnull)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the CLI and return the exit code. Usage errors are 3, not click's 2."""
+    """Run the CLI and return the exit code.
+
+    Whatever goes wrong, the status is 3. Python's own status for an uncaught exception
+    is 1, which callers would read as SUSPICIOUS, and typer's usage errors are 2, which
+    would read as DANGEROUS.
+    """
     try:
         result = app(args=None if argv is None else list(argv), standalone_mode=False)
+        if not isinstance(result, Result):  # --help, or a bare group: typer's own exit
+            return result if isinstance(result, int) else 0
+        sys.stderr.write(result.stderr)
+        sys.stdout.write(result.stdout)
+        sys.stdout.flush()
+        return result.code
     except TyperException as error:
         message = escape_text(error.format_message(), 300)
         print(f"Error: {message}", file=sys.stderr)
         return EXIT_REFUSED_OR_ERROR
-    return result if isinstance(result, int) else 0
+    except BrokenPipeError:  # the reader of our output went away
+        _discard_stdout()
+        return EXIT_REFUSED_OR_ERROR
+    except Exception as error:  # last-resort boundary; only the type is printed
+        print(f"Error: internal error ({type(error).__name__})", file=sys.stderr)
+        return EXIT_REFUSED_OR_ERROR
 
 
 def run() -> None:

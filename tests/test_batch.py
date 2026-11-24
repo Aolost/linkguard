@@ -215,3 +215,15 @@ def test_batch_help_is_free_of_forbidden_options(
         "completion",
     ):
         assert forbidden not in out
+
+
+def test_a_leading_utf8_byte_order_mark_is_ignored(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    code, out, _ = run_batch(
+        capsys,
+        tmp_path,
+        b"\xef\xbb\xbf" + CLEAN.encode() + b"\n" + SUSPICIOUS.encode() + b"\n",
+    )
+    assert code == 1
+    assert "NO_RED_FLAGS" in out.splitlines()[0] and "SUSPICIOUS" in out.splitlines()[1]

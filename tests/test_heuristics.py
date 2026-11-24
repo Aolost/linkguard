@@ -1,6 +1,8 @@
+import time
+
 import pytest
 
-from linkguard.heuristics import find_findings
+from linkguard.heuristics import _HOSTNAME_LIKE, find_findings
 from linkguard.host import normalize_host
 from linkguard.model import Finding, Severity
 from linkguard.parse import parse_url
@@ -133,3 +135,10 @@ def test_every_finding_has_bounded_ascii_evidence() -> None:
         assert finding.evidence.isascii()
         assert len(finding.evidence) <= 200
         assert finding.explanation
+
+
+def test_hostname_like_detection_is_linear_on_hostile_userinfo() -> None:
+    hostile = "a." * 10_000 + "1"
+    started = time.perf_counter()
+    assert _HOSTNAME_LIKE.search(hostile) is None
+    assert time.perf_counter() - started < 1.0

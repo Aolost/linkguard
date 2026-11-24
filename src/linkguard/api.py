@@ -37,6 +37,7 @@ def inspect(url: str, policy: Policy = DEFAULT_POLICY) -> Report:
     try:
         parsed = parse_url(url)
         host = normalize_host(parsed.host)
+        normalized = normalized_url(parsed, host)
     except ParseError as error:
         return Report(
             tool_version=version(),
@@ -49,7 +50,6 @@ def inspect(url: str, policy: Policy = DEFAULT_POLICY) -> Report:
             findings=(),
         )
     findings = tuple(find_findings(parsed, host, policy))
-    normalized = normalized_url(parsed, host)
     return Report(
         tool_version=version(),
         data_version=DATA_VERSION,

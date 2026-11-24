@@ -435,3 +435,35 @@ def test_summary_serializes_to_the_documented_shape() -> None:
     assert data["hops"] == [
         {"url": "http://example.test/", "http_status": 200, "address": "8.8.8.8"}
     ]
+
+
+def test_a_first_url_that_grows_past_the_limit_when_normalized_is_refused() -> None:
+    fetcher, _, net = make(lambda r: reply())
+    result = fetch(fetcher, "http://example.test/" + chr(0x4F60) * 300)
+    assert (result.status, result.reason) == ("refused", "invalid_url")
+    assert net.requests == []
+
+
+def test_a_redirect_that_grows_past_the_limit_when_normalized_is_refused() -> None:
+    fetcher, _, net = make(lambda r: redirect("http://other.test/" + chr(0x4F60) * 300))
+    result = fetch(fetcher, "http://example.test/")
+    assert (result.status, result.reason) == ("refused", "invalid_redirect")
+    assert len(net.requests) == 1
+
+
+def test_redirects_between_https_and_http_are_followed_in_both_directions() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/":
+            return redirect("http://other.test/plain")
+        if request.url.path == "/plain":
+            return redirect("https://example.test/back")
+        return reply()
+
+    fetcher, _, _ = make(handler)
+    result = fetch(fetcher, "https://example.test/")
+    assert result.status == "completed"
+    assert [hop.url for hop in result.hops] == [
+        "https://example.test/",
+        "http://other.test/plain",
+        "https://example.test/back",
+    ]

@@ -4,7 +4,7 @@ from ipaddress import IPv4Address
 from urllib.parse import quote
 
 from linkguard.host import Host, IpHost
-from linkguard.parse import ParsedUrl
+from linkguard.parse import MAX_URL_LENGTH, ParsedUrl, ParseError
 
 # Everything RFC 3986 allows in a path and query, plus "%" so encoding is idempotent.
 _URL_SAFE = "%/?&=:@!$'()*+,;~-._#[]"
@@ -30,5 +30,11 @@ def normalized_target(parsed: ParsedUrl) -> str:
 
 
 def normalized_url(parsed: ParsedUrl, host: Host) -> str:
+    """The normalized URL; refused if percent-encoding made it longer than the limit."""
     port = "" if parsed.port is None else f":{parsed.port}"
-    return f"{parsed.scheme}://{host_text(host)}{port}{normalized_target(parsed)}"
+    url = f"{parsed.scheme}://{host_text(host)}{port}{normalized_target(parsed)}"
+    if len(url) > MAX_URL_LENGTH:
+        raise ParseError(
+            "too_long", f"normalized URL longer than {MAX_URL_LENGTH} characters"
+        )
+    return url

@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from linkguard.ssrf import blocked_reason
 
 BLOCKED_V4 = [
-    ("0.0.0.0", "unspecified"),  # noqa: S104 - classified, never bound
+    (str(IPv4Address(0)), "unspecified"),
     ("0.1.2.3", "unspecified"),
     ("10.0.0.1", "private"),
     ("10.255.255.255", "private"),

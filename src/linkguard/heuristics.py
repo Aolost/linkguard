@@ -18,8 +18,10 @@ from linkguard.model import (
 from linkguard.parse import ParsedUrl
 from linkguard.reference_rules import reference_findings
 
-# Each dot-separated label ends in a literal dot, so matching stays linear.
-_HOSTNAME_LIKE = re.compile(r"(?:[a-z0-9-]+\.)+[a-z]{2,}", re.IGNORECASE)
+# The shortest hostname-like shape is a label character, a dot, and two letters. Any
+# longer dotted name contains it, and a fixed-size pattern cannot backtrack, so a search
+# is linear.
+_HOSTNAME_LIKE = re.compile(r"[a-z0-9-]\.[a-z]{2}", re.IGNORECASE)
 
 
 def _redacted_userinfo(userinfo: str) -> str:
