@@ -1,4 +1,7 @@
-from linkguard.model import Finding, Severity, escape_text, sort_findings
+import dataclasses
+
+from linkguard.model import Finding, Policy, Severity, escape_text, sort_findings
+from tests.chars import RIGHT_TO_LEFT_OVERRIDE
 
 
 def test_printable_ascii_passes_through_unchanged() -> None:
@@ -8,7 +11,7 @@ def test_printable_ascii_passes_through_unchanged() -> None:
 def test_backslash_control_and_non_ascii_are_escaped() -> None:
     assert escape_text("a\\b") == "a\\\\b"
     assert escape_text("\x1b[31m") == "\\x1b[31m"
-    assert escape_text("‮") == "\\u202e"
+    assert escape_text(RIGHT_TO_LEFT_OVERRIDE) == "\\u202e"
     assert escape_text("\U0001f600") == "\\U0001f600"
     assert escape_text("\ud800") == "\\ud800"
 
@@ -37,3 +40,12 @@ def test_findings_sort_by_severity_then_rule_then_evidence() -> None:
         medium_b,
         low,
     ]
+
+
+def test_policy_has_no_field_that_could_relax_the_ssrf_checks() -> None:
+    # Adding a field must be a deliberate change to this test, and to the SPEC.
+    assert {f.name for f in dataclasses.fields(Policy)} == {
+        "follow",
+        "max_hostname_length",
+        "max_subdomain_depth",
+    }

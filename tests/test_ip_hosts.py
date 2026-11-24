@@ -4,6 +4,7 @@ import pytest
 
 from linkguard.host import Domain, IpHost, normalize_host
 from linkguard.parse import ParseError
+from tests.chars import fullwidth
 
 
 def refusal_code(raw: str) -> str:
@@ -24,7 +25,7 @@ def refusal_code(raw: str) -> str:
         "127.0.1",
         "0x7f.1",
         "0177.1",
-        "１２７．０．０．１",
+        fullwidth("127.0.0.1"),
     ],
 )
 def test_legacy_ipv4_encodings_resolve_to_loopback_and_are_not_canonical(

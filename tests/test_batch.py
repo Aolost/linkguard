@@ -6,14 +6,11 @@ import pytest
 from linkguard.batch import MAX_FILE_BYTES, MAX_URLS
 from linkguard.cli import main
 from linkguard.fetch import SafeFetcher
+from tests.chars import text
 
 CLEAN = "http://example.test/"
 SUSPICIOUS = "http://example.test:8080/"
 DANGEROUS = "http://paypal.com@evil.test/"
-
-
-def text(*codepoints: int) -> str:
-    return "".join(chr(codepoint) for codepoint in codepoints)
 
 
 def write(tmp_path: Path, content: str | bytes) -> str:

@@ -2,6 +2,7 @@ import pytest
 
 from linkguard.host import Domain, normalize_domain
 from linkguard.parse import ParseError
+from tests.chars import SHARP_S, U_DIAERESIS, fullwidth
 
 
 def refusal_code(raw: str) -> str:
@@ -17,9 +18,9 @@ def refusal_code(raw: str) -> str:
         ("EXAMPLE.Test", "example.test"),
         ("example.test.", "example.test"),
         ("b%C3%BCcher.test", "xn--bcher-kva.test"),
-        ("bücher.test", "xn--bcher-kva.test"),
-        ("faß.de", "xn--fa-hia.de"),
-        ("ｅｘａｍｐｌｅ．ｔｅｓｔ", "example.test"),
+        (f"b{U_DIAERESIS}cher.test", "xn--bcher-kva.test"),
+        (f"fa{SHARP_S}.de", "xn--fa-hia.de"),
+        (fullwidth("example.test"), "example.test"),
         ("xn--bcher-kva.test", "xn--bcher-kva.test"),
     ],
 )

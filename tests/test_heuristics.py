@@ -4,6 +4,7 @@ from linkguard.heuristics import find_findings
 from linkguard.host import normalize_host
 from linkguard.model import Finding, Severity
 from linkguard.parse import parse_url
+from tests.chars import U_DIAERESIS
 
 
 def findings_for(url: str) -> list[Finding]:
@@ -127,7 +128,7 @@ def test_findings_are_sorted_and_deterministic() -> None:
 
 
 def test_every_finding_has_bounded_ascii_evidence() -> None:
-    url = "http://" + "%C3%BC" * 40 + "@ü.test:8080/"
+    url = "http://" + "%C3%BC" * 40 + f"@{U_DIAERESIS}.test:8080/"
     for finding in findings_for(url):
         assert finding.evidence.isascii()
         assert len(finding.evidence) <= 200

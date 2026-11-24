@@ -6,12 +6,7 @@ from linkguard.heuristics import find_findings
 from linkguard.host import normalize_host
 from linkguard.model import DEFAULT_POLICY, Finding, Policy, Severity
 from linkguard.parse import ParseError, parse_url
-
-
-def text(*codepoints: int) -> str:
-    """Build text from code points so look-alike characters never sit in the source."""
-    return "".join(chr(codepoint) for codepoint in codepoints)
-
+from tests.chars import text
 
 CYRILLIC_A = text(0x0430)
 CYRILLIC_ER = text(0x0440)

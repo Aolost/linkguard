@@ -12,11 +12,8 @@ from linkguard.cli import main
 from linkguard.cli import run as run_cli
 from linkguard.fetch import SafeFetcher
 from linkguard.model import Policy
+from tests.chars import text
 from tests.fakes import make, redirect, reply
-
-
-def text(*codepoints: int) -> str:
-    return "".join(chr(codepoint) for codepoint in codepoints)
 
 
 def run(capsys: pytest.CaptureFixture[str], *argv: str) -> tuple[int, str, str]:

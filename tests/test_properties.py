@@ -3,9 +3,13 @@ from hypothesis import strategies as st
 
 from linkguard.host import Domain, IpHost, normalize_domain, normalize_host
 from linkguard.parse import MAX_URL_LENGTH, ParsedUrl, ParseError, parse_url
+from tests.chars import text
 
 # Biased towards the characters that make URL and host parsing interesting.
-URLISH = st.text(alphabet="abcxX019.:/@[]%#?-\\ \tß。１\ud800ü", max_size=300)
+URLISH = st.text(
+    alphabet="abcxX019.:/@[]%#?-\\ \t" + text(0xDF, 0x3002, 0xFF11, 0xFC, 0xD800),
+    max_size=300,
+)
 
 
 @given(st.text(max_size=3000))

@@ -8,12 +8,9 @@ from hypothesis import strategies as st
 
 from linkguard import inspect, version
 from linkguard.model import EVIDENCE_LIMIT, Verdict
+from tests.chars import text
 
 GOLDEN = json.loads((Path(__file__).parent / "golden" / "report_v1.json").read_text())
-
-
-def text(*codepoints: int) -> str:
-    return "".join(chr(codepoint) for codepoint in codepoints)
 
 
 def as_golden_dict(url: str) -> dict[str, object]:

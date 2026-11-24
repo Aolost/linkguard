@@ -1,6 +1,7 @@
 import pytest
 
 from linkguard.parse import MAX_URL_LENGTH, ParsedUrl, ParseError, parse_url
+from tests.chars import LINE_SEPARATOR, NO_BREAK_SPACE
 
 
 def refusal_code(url: str) -> str:
@@ -80,8 +81,8 @@ def test_length_limit_boundary() -> None:
         "http://h.test/\x85",
         "http://h.test/ a",
         " http://h.test/",
-        "http://h.test/ ",
-        "http://h.test/ ",
+        f"http://h.test/{NO_BREAK_SPACE}",
+        f"http://h.test/{LINE_SEPARATOR}",
         "http://h.test/\ud800",
         "http://good.test\\@evil.test/",
         "http://h.test/a\\b",

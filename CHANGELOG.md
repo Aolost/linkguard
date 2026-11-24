@@ -24,9 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `linkguard.fetch.SafeFetcher`: validates every hop (ports 80 and 443 only, every resolved address checked before any connection, resolver called once per hop), follows at most 5 redirects by hand, tries at most 3 addresses, and enforces a 10 second total deadline with `asyncio.timeout` (DNS wait capped at 5 seconds). Returns a `FetchSummary`; refusals and errors are reported, never raised.
 - `linkguard check URL [--follow] [--json]` (typer CLI, also `python -m linkguard`), text and JSON output, exit codes 0/1/2/3 with usage errors mapped to 3, and `Policy.follow` wired into `inspect()` (fetch runs on its own event loop in a helper thread). Server-controlled `Content-Type` is escaped to printable ASCII. Adds `typer`.
 - `linkguard batch FILE`: one text line per URL plus a summary; whole-file refusal for unreadable, oversized (over 1 MiB), non-UTF-8, empty, or over-10,000-URL files; exit code is the maximum over entries. `version()` is now cached, which roughly halved the time of a 10,000 URL batch on the development machine.
+- README: threat model, fetch-pipeline diagram, rule table, example output captured by running the tool, limitations, what is not verified, and a table tying each behavior claim to a test. `tests/test_readme.py` re-runs every example and checks that every cited test exists.
 - `make coverage-gate`: parser, host and SSRF modules must keep at least 90 percent line and branch coverage; run as part of `make check`.
 
 ### Fixed
+
+- Test sources no longer contain literal invisible or look-alike characters (no-break space, U+2028, the right-to-left override, full-width digits); they are built from code points in `tests/chars.py`.
 
 - `HopClient` reports `httpx.InvalidURL` (raised by the HTTP library while it parses a hostile `Location`) as `http_error` instead of letting it escape.
 

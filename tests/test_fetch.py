@@ -1,5 +1,6 @@
 import asyncio
 import time
+from ipaddress import ip_address
 from typing import Any
 
 import httpx
@@ -10,6 +11,7 @@ from hypothesis import strategies as st
 from linkguard.fetch import MAX_REDIRECTS, TOTAL_TIMEOUT, SafeFetcher
 from linkguard.hop import HopClient
 from linkguard.model import FetchSummary, Hop
+from linkguard.ssrf import blocked_reason
 from tests.fakes import Handler, Net, make, redirect, reply
 
 
@@ -396,7 +398,7 @@ def test_any_location_header_yields_a_summary_and_never_raises(location: str) ->
     fetcher, _, net = make(lambda r: redirect(location))
     result = fetch(fetcher, "http://example.test/")
     assert result.status in {"completed", "refused", "error"}
-    assert all(request.url.host in {"8.8.8.8", "1.1.1.1"} for request in net.requests)
+    assert all(blocked_reason(ip_address(r.url.host)) is None for r in net.requests)
 
 
 SCHEME_SHAPED = st.builds(
@@ -414,7 +416,7 @@ def test_scheme_shaped_location_headers_never_make_fetch_raise(location: str) ->
     fetcher, _, net = make(lambda r: redirect(location))
     result = fetch(fetcher, "http://example.test/")
     assert result.status in {"completed", "refused", "error"}
-    assert all(request.url.host in {"8.8.8.8", "1.1.1.1"} for request in net.requests)
+    assert all(blocked_reason(ip_address(r.url.host)) is None for r in net.requests)
 
 
 def test_summary_serializes_to_the_documented_shape() -> None:
