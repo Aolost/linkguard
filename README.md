@@ -6,7 +6,7 @@
 
 ## Install
 
-Requires [uv](https://docs.astral.sh/uv/) and Python 3.11 or newer.
+Requires [uv](https://docs.astral.sh/uv/) and Python 3.12 or newer.
 
 ```bash
 git clone https://github.com/aolost/linkguard.git
