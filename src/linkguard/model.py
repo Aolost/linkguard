@@ -29,6 +29,7 @@ class Policy:
     """Heuristic thresholds. Nothing here can affect SSRF validation."""
 
     max_hostname_length: int = 50
+    max_subdomain_depth: int = 4
 
 
 DEFAULT_POLICY = Policy()

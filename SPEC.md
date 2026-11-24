@@ -207,12 +207,16 @@ Input to `inspect` is a `str`. Output `normalized_url` is `scheme://[host][:port
 ### Reference data
 
 All heuristic data lives in one module, `linkguard.data`, under one `DATA_VERSION` string that
-appears in every report as `data_version`. The module holds four lists, each with a comment naming
-its provenance and review date:
+appears in every report as `data_version`. The module holds four lists. Its header states the provenance honestly: the lists were
+compiled on 2026-11-25 from general knowledge, not derived from
+the Public Suffix List or any threat-intelligence feed, and have not been audited for completeness
+or false positives. The lists are:
 
 1. Multi-label suffixes (for example `co.uk`), used only to split a host into subdomain labels,
    one registrable label, and a suffix.
-2. Brands: a label (`paypal`) and the exact domains that legitimately own it (`paypal.com`).
+2. Brands: a label of at least 5 characters (`paypal`) and the exact domains that legitimately own
+   it (`paypal.com`). Shorter labels are excluded because they sit within one edit of too many
+   ordinary words, so brands such as `ebay` are not covered.
 3. Suspicious TLDs.
 4. URL shortener domains.
 
@@ -248,7 +252,7 @@ library has no script property. This is an approximation and is listed under lim
 | LG-006 | low | any `xn--` label | non-IDN host |
 | LG-007 | high | one label mixes Latin with Cyrillic or Greek letters | a label of a single script; digits and hyphens are neutral |
 | LG-008 | medium | registrable label (per list 1) within edit distance 1 (2 for labels of 8+ characters) of a brand label but not equal to it | the exact brand label; unrelated words |
-| LG-009 | high | brand label appears in a subdomain label (per list 1) and the host is not equal to or under a domain that legitimately owns it (list 2) | `www.brand.com`; brand as the registrable label of its own domain |
+| LG-009 | high | a brand label equals a hyphen-separated token of a subdomain label (per list 1) and the host is not equal to or under a domain that legitimately owns it (list 2) | `www.brand.com`; brand as the registrable label of its own domain; `pineapple` for brand `apple` |
 | LG-010 | medium | more subdomain labels (per list 1) than `max_subdomain_depth` | exactly at the threshold |
 | LG-011 | low | hostname longer than `max_hostname_length` | exactly at the threshold |
 | LG-012 | low | last label is in list 3 | a neighboring TLD not on the list |

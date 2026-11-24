@@ -16,6 +16,7 @@ from linkguard.model import (
     sort_findings,
 )
 from linkguard.parse import ParsedUrl
+from linkguard.reference_rules import reference_findings
 
 # Each dot-separated label ends in a literal dot, so matching stays linear.
 _HOSTNAME_LIKE = re.compile(r"(?:[a-z0-9-]+\.)+[a-z]{2,}", re.IGNORECASE)
@@ -158,5 +159,6 @@ def find_findings(
             *_port_findings(parsed),
             *_percent_findings(parsed, host),
             *_name_findings(host, policy),
+            *reference_findings(host, policy),
         ]
     )
