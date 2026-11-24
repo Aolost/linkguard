@@ -458,7 +458,7 @@ Runtime dependencies are added only in the slice that first imports them. Pinned
 
 | Name | Used for | Why not in-house | Vetting (performed in the adding slice, recorded in the commit message) |
 | ---- | -------- | ---------------- | ----------------------------------------------------------------------- |
-| `idna` | IDNA 2008 / UTS #46 host conversion | The standard `idna` codec implements the obsolete IDNA 2003; correct 2008 tables and mapping are large data sets that must not be hand-written. Already a transitive dependency of `httpx`. | License, maintainer, release age, `uv lock` diff, known advisories |
+| `idna` | IDNA 2008 / UTS #46 host conversion | The standard `idna` codec implements the obsolete IDNA 2003; correct 2008 tables and mapping are large data sets that must not be hand-written. Already a transitive dependency of `httpx`. | Locked 3.20 (uploaded 2026-09-17 per `uv.lock`), license BSD-3-Clause from package metadata. Checked: version, license, upload date. Not checked: advisories (no scanner was run). |
 | `httpx` | Async HTTP client for `SafeFetcher` | TLS with a custom SNI name distinct from the connect address, streaming reads, per-operation timeouts and a transport seam for fakes. In-house this is a TLS and HTTP/1.1 client, which is risky security code. | Same, plus review of `sni_hostname` and `trust_env` behavior in the locked version |
 | `typer` | CLI | Argument parsing, help, exit-code plumbing. This one is a convenience: `argparse` could do it in the standard library. Recorded here because the brief names `typer`; the cost is `click` as a transitive dependency. | Same |
 
