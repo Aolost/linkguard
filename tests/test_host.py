@@ -76,3 +76,7 @@ def test_total_length_boundary() -> None:
     assert len(at_limit) == 253
     assert normalize_domain(at_limit).name == at_limit
     assert refusal_code(at_limit + "a") == "invalid_host"
+
+
+def test_lone_surrogate_is_refused_not_raised() -> None:
+    assert refusal_code("\ud800.test") == "invalid_host"

@@ -20,8 +20,8 @@ class Domain:
 def _percent_decode_once(raw: str) -> str:
     try:
         decoded = unquote_to_bytes(raw).decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ParseError("invalid_host", "percent-encoded host is not UTF-8") from error
+    except UnicodeError as error:
+        raise ParseError("invalid_host", "host is not valid UTF-8 text") from error
     if "%" in decoded:
         raise ParseError("invalid_host", "host still contains % after decoding once")
     return decoded
