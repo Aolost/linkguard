@@ -32,3 +32,6 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --strict-config"
+
+[tool.mypy]
+python_version = "3.12"
