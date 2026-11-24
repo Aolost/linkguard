@@ -37,4 +37,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Decision recorded in SPEC.md and README: no online reputation lookup in this release. There is no `--online` option, no API-key variable, and no URL is sent to any third party.
 - Minimum Python is 3.12, pinned by `.python-version` and mypy `python_version`. Added `hypothesis` as a dev dependency.

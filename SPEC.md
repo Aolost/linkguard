@@ -14,8 +14,6 @@ indicators without rendering or executing page content. It never claims a URL is
 - Offer an optional fetcher (`SafeFetcher`, off by default) that cannot be turned against the
   user's internal network (SSRF), the user's machine, or the user's time and memory.
 - Offer a CLI and a library with stable exit codes and a versioned JSON schema.
-- Final milestone only: an optional third-party reputation lookup, off by default, that is explicit
-  about what it sends and where. See "Reputation provider".
 
 ## Non-goals
 
@@ -28,7 +26,9 @@ indicators without rendering or executing page content. It never claims a URL is
 - Browser-exact URL parsing. linkguard is stricter: ambiguous input is refused, not interpreted.
 - Generic registrable-domain accuracy. See "Reference data".
 - JSON output for `batch`.
-- Any reputation provider, `--online` flag, or `Policy.online` field before the final milestone.
+- Any online reputation lookup: no third-party service, no `--online` flag, no `Policy.online` field,
+  and no API-key environment variable. No URL is sent to any third party. The only network access is
+  the user-requested `--follow`, which contacts the URL's own server.
 
 ## Threat model
 
@@ -101,7 +101,7 @@ linkguard batch FILE
 - Text output goes to stdout, warnings and errors to stderr. All echoed attacker-controlled
   text is escaped to printable ASCII and truncated (evidence at most 200 characters).
 - No flag, environment variable, or config file disables SSRF checks.
-- `--online` does not exist until the final milestone (asserted by a test of the CLI help).
+- `--online` does not exist (asserted by tests of the `check` and `batch` help).
 
 ### Exit codes
 
@@ -147,7 +147,7 @@ the caller is inside an event loop.
 
 ### JSON schema (version "1")
 
-Version "1" is frozen at the end of the final milestone. Until then the golden file may change.
+Version "1" is the schema of the first release.
 
 ```json
 {
@@ -185,7 +185,7 @@ Version "1" is frozen at the end of the final milestone. Until then the golden f
 - `data_version` is the version of the reference data (see "Reference data") used for the report.
 - `fetch.status` is one of `not_requested`, `completed`, `refused`, `error`. Each hop is
   `{"url", "http_status", "address"}`. `reason` is one of the stable codes listed under SafeFetcher.
-- The final milestone adds a `reputation` object.
+- There is no `reputation` object: no online lookup exists.
 - Findings are sorted by severity (high first), then rule ID, then evidence, so output is
   deterministic.
 - Compatibility, once frozen: within one `schema_version`, fields are only added. A removed or
@@ -396,18 +396,14 @@ to loopback, and only tests marked `loopback` may use that.
 
 ### Reputation provider
 
-Final milestone. Nothing in this section is built before then.
+Not implemented, by decision. The maintainer chose on 2026-11-25 to skip it for this release.
 
-- The provider is not chosen. Before any code, linkguard asks the maintainer to choose the
-  provider, confirm its terms, name the environment variable, and explicitly approve a feature
-  that sends URLs to a third party.
-- It is off by default, enabled only by `--online` and a `Policy` field added in that milestone.
-- The API key is read from the environment only, never from a CLI argument, never logged, never
-  in output, exceptions, or `repr`.
-- Before any request, stderr states that the URL will be sent to the named provider.
-- The README privacy note and the `reputation` JSON object are added in the same milestone.
-- Results can add findings but never remove or lower one. A "not listed" answer is shown as
-  exactly that and does not change the verdict.
+- No provider is chosen, no API-key environment variable is defined, and `--online`,
+  `Policy.online`, and a `reputation` JSON object do not exist.
+- linkguard sends no URL to any third party. The only network access it can make is `--follow`,
+  which contacts the URL's own server and nothing else.
+- Adding one later needs a new maintainer decision (provider, its terms, the variable name, and
+  explicit approval to send URLs to it) and a change to this SPEC first.
 
 ## Invariants
 
@@ -435,7 +431,7 @@ Final milestone. Nothing in this section is built before then.
 13. `HopClient` refuses an `ssl.SSLContext` without `CERT_REQUIRED` and `check_hostname`.
 14. Findings order is deterministic and exit codes follow the table above.
 15. No CLI flag, `Policy` field, or environment variable affects SSRF validation, and no
-    `--online` option exists before the final milestone (CLI help and `Policy` fields asserted).
+    `--online` option exists (CLI help and `Policy` fields asserted).
 16. Every report carries `data_version`, and `DATA_VERSION` changes with the list contents.
 
 ## Edge cases
@@ -491,7 +487,7 @@ Each is a test, positive and negative where it applies:
 - [ ] Output never contains the word "safe".
 - [ ] README contains the threat model, a fetch-pipeline diagram, real example output captured
       by running the tool, limitations (including the suffix-data limitation and the list of
-      what is not verified), and, in the final milestone, the online-provider privacy note.
+      what is not verified), and a plain statement that online lookup is not implemented.
       Behavioral claims in the README link to a test; no performance claim is made without a
       reproducible benchmark (none is planned, so none is made).
 
@@ -531,12 +527,8 @@ checking uses the original hostname, not the IP.
 - `batch` has no JSON output.
 - Reference lists (brands, suspicious TLDs, shorteners, suffixes) are proposed small and reviewed
   in the diff of the slice that adds them.
-- The reputation provider is the final milestone and does not exist until the maintainer decides.
+- The online reputation lookup is not part of this release: no provider, no `--online`, no API key.
 
 ## Open questions
 
-1. **Reputation provider.** Which provider, under which terms, with which environment variable,
-   and an explicit go-ahead to send URLs to a third party. Asked at the start of the final
-   milestone, not before.
-2. **`trustme` as a development dependency** for the loopback TLS fixture. Asked at the start of
-   the `HopClient` slice.
+None at this time.

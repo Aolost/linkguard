@@ -230,7 +230,8 @@ specification, including edge cases, is in [SPEC.md](SPEC.md).
 - **`typer` for the CLI.** The project brief names it. It brings ten more packages,
   including `pydantic`; the standard library's `argparse` would need none. Swapping is a
   small change.
-- **No online reputation lookup yet, on purpose.** See below.
+- **No online reputation lookup, on purpose.** It is not implemented in this release, and no URL
+  is sent to any third party. See below.
 
 ## Threat model
 
@@ -358,13 +359,9 @@ many generated inputs. They say nothing about inputs nobody thought of.
 
 ## Online reputation lookup
 
-Not implemented, and no URL is sent to any third party by linkguard today. (`--follow` contacts
-the URL's own server, as described above.)
-
-A reputation lookup is planned as the last milestone. Design intent, not behavior: it will be
-off by default, read its API key from the environment only, never log it, and print a warning
-that it sends the URL to a third party. Its provider has not been chosen. This section will
-carry the privacy note when it exists.
+Not implemented in this release, by decision. linkguard has no `--online` option and no
+API-key setting, and it sends no URL to any third party. The only network access it can make
+is `--follow`, which contacts the URL's own server, as described under Limitations.
 
 ## License
 
