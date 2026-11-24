@@ -1,10 +1,20 @@
 """Heuristic rules that need only the parsed URL and normalized host."""
 
 import re
+import unicodedata
 from urllib.parse import unquote
 
-from linkguard.host import Host, IpHost
-from linkguard.model import Finding, Severity, escape_text, sort_findings
+import idna
+
+from linkguard.host import Domain, Host, IpHost
+from linkguard.model import (
+    DEFAULT_POLICY,
+    Finding,
+    Policy,
+    Severity,
+    escape_text,
+    sort_findings,
+)
 from linkguard.parse import ParsedUrl
 
 # Each dot-separated label ends in a literal dot, so matching stays linear.
@@ -90,7 +100,56 @@ def _percent_findings(parsed: ParsedUrl, host: Host) -> list[Finding]:
     ]
 
 
-def find_findings(parsed: ParsedUrl, host: Host) -> list[Finding]:
+def _label_scripts(label: str) -> set[str]:
+    # The standard library has no script property; the first word of a character's
+    # name (LATIN, CYRILLIC, GREEK, ...) is an approximation that suits these scripts.
+    names = (unicodedata.name(char, "") for char in label if char.isalpha())
+    return {name.split(" ", 1)[0] for name in names if name}
+
+
+def _mixes_latin_with_lookalike_script(label: str) -> bool:
+    scripts = _label_scripts(label)
+    return "LATIN" in scripts and bool(scripts & {"CYRILLIC", "GREEK"})
+
+
+def _name_findings(host: Host, policy: Policy) -> list[Finding]:
+    if not isinstance(host, Domain):
+        return []
+    findings: list[Finding] = []
+    if any(label.startswith("xn--") for label in host.name.split(".")):
+        findings.append(
+            Finding(
+                "LG-006",
+                Severity.LOW,
+                escape_text(host.name),
+                "The host uses an internationalized (punycode) label.",
+            )
+        )
+    for label in idna.decode(host.name).split("."):
+        if _mixes_latin_with_lookalike_script(label):
+            findings.append(
+                Finding(
+                    "LG-007",
+                    Severity.HIGH,
+                    escape_text(label),
+                    "One label mixes Latin letters with look-alike letters.",
+                )
+            )
+    if len(host.name) > policy.max_hostname_length:
+        findings.append(
+            Finding(
+                "LG-011",
+                Severity.LOW,
+                f"{len(host.name)} characters",
+                "The hostname is unusually long.",
+            )
+        )
+    return findings
+
+
+def find_findings(
+    parsed: ParsedUrl, host: Host, policy: Policy = DEFAULT_POLICY
+) -> list[Finding]:
     """Return every finding for a parsed URL, in deterministic order."""
     return sort_findings(
         [
@@ -98,5 +157,6 @@ def find_findings(parsed: ParsedUrl, host: Host) -> list[Finding]:
             *_ip_findings(parsed, host),
             *_port_findings(parsed),
             *_percent_findings(parsed, host),
+            *_name_findings(host, policy),
         ]
     )

@@ -24,6 +24,16 @@ class Finding:
     explanation: str
 
 
+@dataclass(frozen=True, slots=True)
+class Policy:
+    """Heuristic thresholds. Nothing here can affect SSRF validation."""
+
+    max_hostname_length: int = 50
+
+
+DEFAULT_POLICY = Policy()
+
+
 def _escape_char(char: str) -> str:
     code = ord(char)
     if char == "\\":
