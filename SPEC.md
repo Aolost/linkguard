@@ -316,7 +316,9 @@ completeness, and it depends on the interpreter's own tables.
 timeout, so a thread is not used. The default resolver runs `getaddrinfo` in a short-lived child
 process (`sys.executable -I -c <fixed source>`; the hostname is sent on stdin, never in argv) and
 kills the child on timeout. Output is read up to 4096 bytes and every line must parse as an IP
-address, otherwise the lookup fails closed (`dns_failed`). The DNS wait is capped at 5 s and by
+address (a scoped address such as `fe80::1%eth0` is refused), otherwise the lookup fails closed
+(`dns_failed`). After any outcome the child is killed, its stdout is drained so the exit is
+observed, and it is reaped. The DNS wait is capped at 5 s and by
 the time remaining in the total deadline. Any failure to start the child also fails closed.
 
 What this does and does not guarantee: linkguard stops waiting at the deadline and the child is
