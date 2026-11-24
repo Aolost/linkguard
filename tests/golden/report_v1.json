@@ -1,0 +1,72 @@
+{
+  "inspected": {
+    "schema_version": "1",
+    "tool_version": "<version>",
+    "data_version": "1",
+    "input": "http://paypal.com@203.0.113.7:8080/a?b",
+    "outcome": "inspected",
+    "refusal": null,
+    "normalized_url": "http://203.0.113.7:8080/a?b",
+    "verdict": "DANGEROUS",
+    "findings": [
+      {
+        "rule_id": "LG-002",
+        "severity": "high",
+        "evidence": "paypal.com",
+        "explanation": "The text before the @ looks like a destination."
+      },
+      {
+        "rule_id": "LG-001",
+        "severity": "medium",
+        "evidence": "paypal.com",
+        "explanation": "Credentials in a URL can disguise the real host."
+      },
+      {
+        "rule_id": "LG-003",
+        "severity": "medium",
+        "evidence": "203.0.113.7",
+        "explanation": "The host is a raw IP address instead of a name."
+      },
+      {
+        "rule_id": "LG-005",
+        "severity": "low",
+        "evidence": "port 8080",
+        "explanation": "The URL uses a non-default port."
+      }
+    ],
+    "fetch": {
+      "status": "not_requested",
+      "hops": [],
+      "final_url": null,
+      "http_status": null,
+      "content_type": null,
+      "bytes_read": 0,
+      "truncated": false,
+      "reason": null
+    }
+  },
+  "refused": {
+    "schema_version": "1",
+    "tool_version": "<version>",
+    "data_version": "1",
+    "input": "ftp://example.test/",
+    "outcome": "refused",
+    "refusal": {
+      "code": "bad_scheme",
+      "message": "only http and https are accepted"
+    },
+    "normalized_url": null,
+    "verdict": null,
+    "findings": [],
+    "fetch": {
+      "status": "not_requested",
+      "hops": [],
+      "final_url": null,
+      "http_status": null,
+      "content_type": null,
+      "bytes_read": 0,
+      "truncated": false,
+      "reason": null
+    }
+  }
+}

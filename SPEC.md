@@ -202,7 +202,11 @@ Input to `inspect` is a `str`. Output `normalized_url` is `scheme://[host][:port
   evaluated as its embedded IPv4 for classification.
 - Port: digits only, 1 to 65535, leading zeros allowed, empty port (`host:`) refused, default
   port (80 for http, 443 for https) removed.
-- Path and query are kept as given after the character checks above.
+- Path and query are kept as given after the character checks above, except that non-ASCII
+  characters are percent-encoded as UTF-8 so `normalized_url` is always printable ASCII. Existing
+  `%XX` sequences are left alone, which keeps normalization idempotent.
+- Mapped IPv6 addresses are always written as `::ffff:HHHH:HHHH` because Python's own `str()` of
+  them differs between versions.
 
 ### Reference data
 

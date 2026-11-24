@@ -1,8 +1,6 @@
 """linkguard."""
 
-from importlib.metadata import version as _distribution_version
+from linkguard._version import version
+from linkguard.api import inspect
 
-
-def version() -> str:
-    """Return the installed package version."""
-    return _distribution_version("linkguard")
+__all__ = ["inspect", "version"]
