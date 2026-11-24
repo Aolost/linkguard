@@ -21,9 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `linkguard.ssrf.blocked_reason`: explicit CIDR blocklist (IPv4 and IPv6, with mapped, NAT64 and 6to4 judged by their embedded IPv4) that fails closed.
 - `linkguard.resolve`: `SubprocessResolver` (name lookup in a child process that is killed, drained and reaped on timeout; output capped at 4096 bytes and every line validated) and `resolve_hop`, which refuses a hop if any resolved address is blocked, the answer is empty, or the resolver misbehaves.
 - `linkguard.hop.HopClient`: one pinned GET to a validated IP with the hostname kept for `Host`, SNI and certificate verification; 64 KB body cap, no cookies or credentials, `trust_env=False`, redirects reported not followed, stable failure reasons. Adds `httpx` (runtime) and `trustme` (dev only). Tests include real TLS on loopback and a socket guard that fails any test touching a non-loopback address.
+- `linkguard.fetch.SafeFetcher`: validates every hop (ports 80 and 443 only, every resolved address checked before any connection, resolver called once per hop), follows at most 5 redirects by hand, tries at most 3 addresses, and enforces a 10 second total deadline with `asyncio.timeout` (DNS wait capped at 5 seconds). Returns a `FetchSummary`; refusals and errors are reported, never raised.
 - `make coverage-gate`: parser, host and SSRF modules must keep at least 90 percent line and branch coverage; run as part of `make check`.
 
 ### Fixed
+
+- `HopClient` reports `httpx.InvalidURL` (raised by the HTTP library while it parses a hostile `Location`) as `http_error` instead of letting it escape.
 
 - `normalize_domain` refuses a lone surrogate with `ParseError` instead of raising `UnicodeEncodeError` (found by property tests).
 

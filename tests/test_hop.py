@@ -234,3 +234,13 @@ def test_a_hung_transport_is_cancelled_by_the_callers_deadline() -> None:
     with pytest.raises(TimeoutError):
         run(attempt())
     assert time.monotonic() - started < 3
+
+
+@pytest.mark.parametrize("location", ["javascript:alert(1)", "http://[::1/"])
+def test_a_location_httpx_cannot_parse_is_a_stable_failure_not_an_exception(
+    location: str,
+) -> None:
+    recorder = Recorder(lambda r: reply(302, b"", {"Location": location}))
+    with pytest.raises(HopFailed) as caught:
+        get(recorder)
+    assert caught.value.reason == "http_error"

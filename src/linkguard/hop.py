@@ -87,10 +87,9 @@ class HopClient:
         """GET `target` from `address`, presenting `hostname` as Host and TLS name."""
         ip_text = f"[{address}]" if address.version == 6 else str(address)
         url = f"{scheme}://{ip_text}{'' if port is None else f':{port}'}{target}"
+        name = f"[{hostname}]" if ":" in hostname else hostname  # IPv6 literal
         host_header = (
-            hostname
-            if port is None or port == _DEFAULT_PORTS[scheme]
-            else f"{hostname}:{port}"
+            name if port is None or port == _DEFAULT_PORTS[scheme] else f"{name}:{port}"
         )
         headers = {
             "Host": host_header,
@@ -126,5 +125,7 @@ class HopClient:
             raise HopFailed(
                 "tls_error" if _has_tls_cause(error) else "connect_failed"
             ) from error
-        except httpx.HTTPError as error:
+        except (httpx.HTTPError, httpx.InvalidURL) as error:
+            # InvalidURL is not an HTTPError, and httpx lets it escape while it builds
+            # its own redirect request from a hostile Location header.
             raise HopFailed("http_error") from error

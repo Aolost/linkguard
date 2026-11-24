@@ -171,8 +171,7 @@ Version "1" is frozen at the end of the final milestone. Until then the golden f
   `verdict` and `normalized_url` are null, and `findings` is empty.
 - `data_version` is the version of the reference data (see "Reference data") used for the report.
 - `fetch.status` is one of `not_requested`, `completed`, `refused`, `error`. Each hop is
-  `{"url", "http_status", "address"}`. `reason` is a stable code, for example `blocked_address`,
-  `redirect_limit`, `timeout`, `dns_failed`, `dns_timeout`.
+  `{"url", "http_status", "address"}`. `reason` is one of the stable codes listed under SafeFetcher.
 - The final milestone adds a `reputation` object.
 - Findings are sorted by severity (high first), then rule ID, then evidence, so output is
   deterministic.
@@ -286,9 +285,20 @@ Pipeline for each hop (the initial URL and every redirect target):
    the normalized hostname, and the TLS SNI and certificate verification name is the hostname
    (httpx `sni_hostname` extension). The hostname is never resolved a second time. Addresses are
    tried in resolver order, at most 3, all validated before the first connection.
-5. Read the response. Redirects (3xx with `Location`) are followed manually; `Location` is
-   treated as hostile text, subject to the 2048-character limit, and goes back to step 1.
-   At most 5 redirects; the 6th is refused with `redirect_limit`.
+5. Read the response. Redirects (301, 302, 303, 307, 308 with a `Location`) are followed manually.
+   `Location` is hostile text: over 2048 characters is refused. A value that carries its own scheme
+   goes to the strict parser untouched (so `http://` is refused, not "repaired" by borrowing the
+   current host); only scheme-less references are joined to the current URL. The result goes back
+   to step 1. At most 5 redirects are followed, so at most 6 hops are fetched, and a 6th redirect
+   is refused with `redirect_limit`.
+6. If a connection to one validated address is refused, the next validated address is tried, at
+   most 3 in all. Every other failure (timeout, TLS error, HTTP error) stops the fetch.
+
+`fetch.status` is `refused` for policy decisions (`blocked_address`, `no_addresses`,
+`port_not_allowed`, `redirect_limit`, `invalid_url`, `invalid_redirect`) and `error` for
+operational failures (`dns_failed`, `dns_timeout`, `timeout`, `tls_error`, `connect_failed`,
+`http_error`). A malformed `Location` that the HTTP library itself rejects while building its own
+redirect request (for example `javascript:alert(1)`) is reported as `http_error`.
 
 Blocked address classes, implemented as an explicit CIDR table in `linkguard.ssrf` (not
 `ipaddress.is_global`, whose behavior varies by Python patch release):
